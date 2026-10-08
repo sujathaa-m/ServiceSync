@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ServiceOps - Activity Management Platform (12 Screens)</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    @keyframes pulse-subtle {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    .animate-pulse-subtle { animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    .badge-p1 { background-color: #fee2e2; color: #991b1b; border: 1px solid #f87171; }
+    .badge-p2 { background-color: #ffedd5; color: #9a3412; border: 1px solid #fb923c; }
+    .badge-p3 { background-color: #fef9c3; color: #854d0e; border: 1px solid #facc15; }
+    .badge-p4 { background-color: #f1f5f9; color: #334155; border: 1px solid #94a3b8; }
+
+    .status-SUBMITTED { background-color: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
+    .status-VALIDATED { background-color: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; }
+    .status-PENDING_APPROVAL { background-color: #fef3c7; color: #b45309; border: 1px solid #fcd34d; }
+    .status-APPROVED { background-color: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
+    .status-ASSIGNED { background-color: #e0e7ff; color: #4338ca; border: 1px solid #a5b4fc; }
+    .status-IN_PROGRESS { background-color: #f3e8ff; color: #6b21a8; border: 1px solid #d8b4fe; }
+    .status-PENDING_VERIFICATION { background-color: #fce7f3; color: #9d174d; border: 1px solid #f472b6; }
+    .status-COMPLETED { background-color: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+    .status-CLOSED { background-color: #d1fae5; color: #047857; border: 1px solid #6ee7b7; }
+    .status-EXCEPTION { background-color: #fee2e2; color: #b91c1c; border: 1px solid #f87171; font-weight: bold; }
+    .status-REJECTED { background-color: #ffe4e6; color: #9f1239; border: 1px solid #fda4af; }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col font-sans">
+
+  <!-- TOP HEADER & DEMO SCRIPT SEQUENCER -->
+  <header class="bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-950 text-white px-4 py-2.5 shadow-md border-b border-indigo-700/50 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-black text-white shadow-inner">
+          SO
+        </div>
+        <div>
+          <span class="font-bold text-base tracking-tight text-white">ServiceOps</span>
+          <span class="text-xs bg-indigo-500/30 text-indigo-200 px-2 py-0.5 rounded-full ml-2 border border-indigo-400/30">DataQuest 3.0 Blueprint</span>
+        </div>
+      </div>
+
+      <!-- Demo Script Triggers (M-104 Scenario) -->
+      <div class="flex items-center gap-1.5 overflow-x-auto py-1 text-xs">
+        <span class="text-slate-400 font-medium whitespace-nowrap mr-1">Demo Script:</span>
+        <button onclick="demoStep(1)" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-indigo-200 rounded border border-slate-700 whitespace-nowrap transition">
+          1. Raise P1 (M-104)
+        </button>
+        <button onclick="demoStep(2)" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-indigo-200 rounded border border-slate-700 whitespace-nowrap transition">
+          2. Auto-Validate
+        </button>
+        <button onclick="demoStep(3)" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-indigo-200 rounded border border-slate-700 whitespace-nowrap transition">
+          3. Auto-Assign Ravi
+        </button>
+        <button onclick="demoStep(4)" class="px-2.5 py-1 bg-amber-950 hover:bg-amber-900 text-amber-200 rounded border border-amber-800 whitespace-nowrap transition">
+          4. Tech Dropout
+        </button>
+        <button onclick="demoStep(5)" class="px-2.5 py-1 bg-rose-950 hover:bg-rose-900 text-rose-200 rounded border border-rose-800 whitespace-nowrap font-semibold transition">
+          5. Reassign Priya
+        </button>
+        <button onclick="demoStep(6)" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-indigo-200 rounded border border-slate-700 whitespace-nowrap transition">
+          6. Execute & Photo
+        </button>
+        <button onclick="demoStep(7)" class="px-2.5 py-1 bg-emerald-950 hover:bg-emerald-900 text-emerald-200 rounded border border-emerald-800 whitespace-nowrap transition">
+          7. Verify & Close
+        </button>
+        <button onclick="resetDemoData()" class="px-2 py-1 bg-slate-800 hover:bg-red-900/50 text-slate-300 rounded border border-slate-700 whitespace-nowrap transition ml-1">
+          ↺ Reset
+        </button>
+      </div>
+
+      <!-- Role Switcher -->
+      <div class="flex items-center gap-2 bg-slate-800/80 p-1 rounded-lg border border-slate-700">
+        <span class="text-xs text-slate-400 pl-2">Role:</span>
+        <select id="roleSelector" onchange="switchRole(this.value)" class="bg-slate-900 text-white text-xs font-medium rounded px-2 py-1 border border-slate-600 focus:outline-none">
+          <option value="OPS_MANAGER">👔 Ops Manager (Alex)</option>
+          <option value="APPROVER">✅ Approver (Elena)</option>
+          <option value="TECHNICIAN_RAVI">🔧 Tech (Ravi Kumar)</option>
+          <option value="TECHNICIAN_PRIYA">🔧 Tech (Priya Sharma)</option>
+          <option value="CUSTOMER">🏢 Customer (Site A)</option>
+          <option value="ADMIN">⚙️ Admin (Sarah)</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <!-- NOTIFICATION BANNER -->
+  <div id="toastNotification" class="hidden transition-all duration-300 fixed bottom-5 right-5 z-50 max-w-md bg-white border border-slate-200 shadow-2xl rounded-xl p-4 flex items-start gap-3">
+    <div id="toastIcon" class="w-8 h-8 rounded-full flex items-center justify-center shrink-0"></div>
+    <div class="flex-1">
+      <div class="flex items-center justify-between">
+        <h4 id="toastTitle" class="text-sm font-bold text-slate-900">Notification</h4>
+        <span class="text-[11px] text-slate-400" id="toastTime">just now</span>
+      </div>
+      <p id="toastMessage" class="text-xs text-slate-600 mt-0.5 leading-relaxed"></p>
+    </div>
+    <button onclick="hideToast()" class="text-slate-400 hover:text-slate-600 text-xs font-bold px-1">&times;</button>
+  </div>
+
+  <!-- CRITICAL EXCEPTION HERO BANNER -->
+  <div id="exceptionBanner" class="hidden bg-rose-600 text-white px-4 py-3 shadow-md animate-pulse-subtle">
+    <div class="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-2">
+      <div class="flex items-center gap-3">
+        <span class="p-1.5 bg-rose-800 rounded-full text-white text-sm">⚠️</span>
+        <div>
+          <span class="font-bold text-sm">CRITICAL EXCEPTION RAISED: Technician Dropout</span>
+          <p class="text-xs text-rose-100" id="exceptionBannerText">
+            Ravi Kumar cannot attend ticket #REQ-104 (M-104 Hydraulic Pump). Immediate reassignment needed.
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="reassignTech('REQ-104', 'Priya Sharma')" class="px-3.5 py-1.5 bg-white text-rose-700 hover:bg-rose-50 text-xs font-bold rounded-lg shadow-sm transition">
+          ⚡ 1-Click Instant Reassign to Priya (Score 79)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN APP CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6">
+
+    <!-- NAVIGATION TABS FOR ALL 12 SCREENS -->
+    <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+      <div class="flex items-center gap-1.5 overflow-x-auto text-xs font-semibold py-1">
+        <button id="tab-dashboard" onclick="switchView('dashboard')" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white shadow-sm whitespace-nowrap">
+          1. 📊 Ops Dashboard
+        </button>
+        <button id="tab-requests" onclick="switchView('requests')" class="px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 whitespace-nowrap">
+          2. 📋 Requests & Kanban
+        </button>
+        <button id="tab-newrequest" onclick="switchView('newrequest')" class="px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 whitespace-nowrap">
+          3. ➕ Request Wizard
+        </button>
+        <button id="tab-approvals" onclick="switchView('approvals')" class="px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 whitespace-nowrap">
+          5. ✅ Approval Queue
+        </button>
+        <button id="tab-assignments" onclick="switchView('assignments')" class="px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 whitespace-nowrap">
+          6. 🎯 Smart Match
+        </button>
+        <button id="tab-exceptions" onclick="switchView('exceptions')" class="px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 whitespace-nowrap">
+          7. 🚨 Exceptions Center
+        </button>
+        <button id="tab-myjobs" onclick="switchView('myjobs')" class="px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 whitespace-nowrap">
+          8. 📱 Technician PWA
+        </button>
+        <button id="tab-resources" onclick="switchView('resources')" class="px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 whitespace-nowrap">
+          9. 📦 Resources & Parts
+        </button>
+        <button id="tab-machines" onclick="switchView('machines')" class="px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 whitespace-nowrap">
+          10. ⚙️ Machines & Fleet
+        </button>
+        <button id="tab-admin" onclick="switchView('admin')" class="px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 whitespace-nowrap">
+          11. 📜 Audit Trail
+        </button>
+        <button id="tab-settings" onclick="switchView('settings')" class="px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 whitespace-nowrap">
+          12. 🛠️ Settings & SLA
+        </button>
+      </div>
+
+      <div class="hidden lg:flex items-center gap-2 text-xs">
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+          Socket.IO Live
+        </span>
+      </div>
+    </div>
+
+    <!-- SCREEN 1: OPS MANAGER HERO DASHBOARD -->
+    <section id="view-dashboard" class="space-y-6">
+      <!-- KPI Cards -->
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Open Requests</div>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span class="text-2xl font-bold text-slate-900" id="kpiOpen">2</span>
+            <span class="text-xs text-blue-600 font-medium bg-blue-50 px-2 py-0.5 rounded-full">Active</span>
+          </div>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider">In Progress</div>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span class="text-2xl font-bold text-indigo-700" id="kpiProgress">1</span>
+            <span class="text-xs text-indigo-600 font-medium bg-indigo-50 px-2 py-0.5 rounded-full">On Site</span>
+          </div>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-amber-200 bg-amber-50/30 shadow-sm">
+          <div class="text-xs font-semibold text-amber-700 uppercase tracking-wider">SLA At Risk (&lt;1h)</div>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span class="text-2xl font-bold text-amber-700" id="kpiSlaRisk">1</span>
+            <span class="text-xs text-amber-800 font-medium bg-amber-100 px-2 py-0.5 rounded-full">&gt;80% time</span>
+          </div>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-rose-200 bg-rose-50/30 shadow-sm">
+          <div class="text-xs font-semibold text-rose-700 uppercase tracking-wider">SLA Breached</div>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span class="text-2xl font-bold text-rose-700" id="kpiBreached">0</span>
+            <span class="text-xs text-rose-800 font-medium bg-rose-100 px-2 py-0.5 rounded-full">0 Breaches</span>
+          </div>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Techs Available</div>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span class="text-2xl font-bold text-emerald-600" id="kpiTechs">4 / 6</span>
+            <span class="text-xs text-emerald-700 font-medium bg-emerald-50 px-2 py-0.5 rounded-full">67% Ready</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Split: Feed & Map Radar -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col">
+          <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+            <div>
+              <h3 class="font-bold text-slate-900 text-sm">Service Requests Queue</h3>
+              <p class="text-xs text-slate-500">Live operational dispatch feed sorted by priority and SLA</p>
+            </div>
+            <button onclick="switchView('newrequest')" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm">
+              + Raise Ticket
+            </button>
+          </div>
+
+          <div class="overflow-x-auto flex-1">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-500 uppercase font-semibold border-b border-slate-200">
+                <tr>
+                  <th class="py-2.5 px-4">Ticket</th>
+                  <th class="py-2.5 px-3">Site</th>
+                  <th class="py-2.5 px-3">Priority</th>
+                  <th class="py-2.5 px-3">Status</th>
+                  <th class="py-2.5 px-3">Assigned Tech</th>
+                  <th class="py-2.5 px-3">SLA Due</th>
+                  <th class="py-2.5 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="requestTableBody" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Radar Map -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col">
+          <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+            <h3 class="font-bold text-slate-900 text-sm">Dispatch Radar (100km)</h3>
+            <span class="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-mono font-semibold">Leaflet</span>
+          </div>
+          <div class="p-4 flex-1 flex flex-col">
+            <div class="relative w-full h-52 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 rounded-xl overflow-hidden border border-slate-800 p-3">
+              <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-30">
+                <div class="w-44 h-44 rounded-full border border-indigo-400"></div>
+                <div class="w-28 h-28 rounded-full border border-indigo-400"></div>
+                <div class="w-14 h-14 rounded-full border border-indigo-400"></div>
+              </div>
+              <div class="relative w-full h-full text-xs">
+                <div class="absolute top-1/2 left-1/3 -translate-x-1/2 -translate-y-1/2">
+                  <div class="w-5 h-5 bg-rose-500 text-white rounded flex items-center justify-center font-bold text-[10px] shadow-lg">A</div>
+                  <span class="text-[9px] text-white bg-slate-900/80 px-1 rounded block -mt-1 -ml-3 whitespace-nowrap">Site A (M-104)</span>
+                </div>
+                <div class="absolute top-1/4 right-1/4 -translate-x-1/2 -translate-y-1/2">
+                  <div class="w-4 h-4 bg-blue-500 text-white rounded flex items-center justify-center font-bold text-[9px] shadow">B</div>
+                  <span class="text-[8px] text-slate-300 bg-slate-900/80 px-1 rounded block -mt-1 -ml-2 whitespace-nowrap">Site B</span>
+                </div>
+                <div class="absolute top-[42%] left-[42%] -translate-x-1/2 -translate-y-1/2">
+                  <div class="w-4 h-4 bg-emerald-500 rounded-full border border-white flex items-center justify-center text-[9px] text-white font-bold shadow">R</div>
+                  <span class="text-[9px] text-emerald-200 bg-slate-900/90 px-1 rounded block whitespace-nowrap -ml-2">Ravi (4.2km)</span>
+                </div>
+                <div class="absolute top-[68%] left-[28%] -translate-x-1/2 -translate-y-1/2">
+                  <div class="w-4 h-4 bg-indigo-500 rounded-full border border-white flex items-center justify-center text-[9px] text-white font-bold shadow">P</div>
+                  <span class="text-[9px] text-indigo-200 bg-slate-900/90 px-1 rounded block whitespace-nowrap -ml-3">Priya (11.5km)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Extension Plugins: IoT Telemetry & AI Recommendation -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-slate-900 text-white rounded-xl p-4 border border-indigo-500/30 shadow-md">
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">
+              ⚡ [Plugin Slot] IoT Sensor Telemetry Stream (M-104)
+            </h4>
+            <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full">MQTT Connected</span>
+          </div>
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div class="bg-slate-800 p-2.5 rounded-lg border border-slate-700">
+              <span class="text-slate-400 text-[11px] block">Vibration Peak</span>
+              <span class="text-lg font-bold font-mono text-white">1.82 g</span>
+              <span class="text-[10px] text-emerald-400 block">Normal threshold (&lt; 2.5g)</span>
+            </div>
+            <div class="bg-slate-800 p-2.5 rounded-lg border border-slate-700">
+              <span class="text-slate-400 text-[11px] block">Hydraulic Temp</span>
+              <span class="text-lg font-bold font-mono text-white">68.4 °C</span>
+              <span class="text-[10px] text-amber-400 block">Warning threshold 75°C</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950 text-white rounded-xl p-4 border border-purple-500/30 shadow-md">
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-purple-200">
+              🧠 [Plugin Slot] AI Predictive Repair Copilot
+            </h4>
+            <span class="text-[10px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full font-mono">98% Match</span>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Failure symptoms match <b>Manifold O-Ring Degraded Sealing</b>. Estimated MTTR: <b>2.2 hours</b>. Pre-allocating part <b>PRT-HYD-01</b> with Hydraulics Level-3 certified engineer.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 2: SERVICE REQUESTS KANBAN & FILTERABLE TABLE -->
+    <section id="view-requests" class="hidden space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-base font-bold text-slate-900">Service Requests Queue & Kanban</h2>
+          <p class="text-xs text-slate-500">Filterable operational work orders grouped by lifecycle state</p>
+        </div>
+      </div>
+
+      <!-- Kanban Column Boards -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-slate-100 p-3 rounded-xl border border-slate-200">
+          <span class="text-xs font-bold text-slate-700 block mb-2">1. Pending Approval</span>
+          <div class="space-y-2" id="kanbanPending">
+            <div onclick="openRequestModal('REQ-104')" class="bg-white p-3 rounded-lg border border-slate-200 shadow-xs cursor-pointer hover:border-indigo-400 text-xs space-y-1">
+              <div class="flex justify-between font-mono font-bold"><span>REQ-104</span><span class="badge-p1 px-1.5 py-0.2 rounded text-[10px]">P1</span></div>
+              <p class="text-slate-800 font-semibold text-[11px]">M-104 Hydraulic Pump failure</p>
+              <div class="text-slate-400 text-[10px]">Site A • 3h 50m left</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-slate-100 p-3 rounded-xl border border-slate-200">
+          <span class="text-xs font-bold text-slate-700 block mb-2">2. Assigned</span>
+          <div class="space-y-2" id="kanbanAssigned">
+            <div class="text-xs text-slate-400 italic p-2 text-center">No assigned tickets waiting start.</div>
+          </div>
+        </div>
+
+        <div class="bg-slate-100 p-3 rounded-xl border border-slate-200">
+          <span class="text-xs font-bold text-slate-700 block mb-2">3. In Progress</span>
+          <div class="space-y-2">
+            <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-xs text-xs space-y-1">
+              <div class="flex justify-between font-mono font-bold"><span>REQ-102</span><span class="badge-p2 px-1.5 py-0.2 rounded text-[10px]">P2</span></div>
+              <p class="text-slate-800 font-semibold text-[11px]">CNC Milling Axis Thermal</p>
+              <div class="text-slate-400 text-[10px]">Vikram Singh • Site B</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-slate-100 p-3 rounded-xl border border-slate-200">
+          <span class="text-xs font-bold text-slate-700 block mb-2">4. Completed / Closed</span>
+          <div class="space-y-2" id="kanbanClosed">
+            <div class="text-xs text-slate-400 italic p-2 text-center">No closed jobs today.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 3: CREATE REQUEST WIZARD -->
+    <section id="view-newrequest" class="hidden max-w-3xl mx-auto bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
+      <div class="border-b border-slate-100 pb-4">
+        <h2 class="text-lg font-bold text-slate-900">Create New Service Request (Wizard)</h2>
+        <p class="text-xs text-slate-500">Step-by-step equipment selection with live validation engine feedback</p>
+      </div>
+
+      <form onsubmit="handleCreateRequest(event)" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Customer Site</label>
+            <select id="reqSite" class="w-full text-xs border border-slate-300 rounded-lg p-2.5 bg-slate-50">
+              <option value="Site A">Site A - Apex Manufacturing</option>
+              <option value="Site B">Site B - Precision Auto Hub</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Machine Equipment</label>
+            <select id="reqMachine" class="w-full text-xs border border-slate-300 rounded-lg p-2.5 bg-slate-50">
+              <option value="M-104">M-104 - Hydraulic Stamping Press (Contract: ACTIVE)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Priority (SLA Class)</label>
+            <select id="reqPriority" class="w-full text-xs border border-slate-300 rounded-lg p-2.5 bg-slate-50">
+              <option value="P1">P1 - Critical (4 hrs SLA)</option>
+              <option value="P2">P2 - High (12 hrs SLA)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Required Technician Skill</label>
+            <select class="w-full text-xs border border-slate-300 rounded-lg p-2.5 bg-slate-50">
+              <option value="Hydraulics">Hydraulics (Level 3)</option>
+              <option value="Electrical">Electrical</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Issue Title</label>
+          <input type="text" id="reqTitle" value="Hydraulic pump failure - low pressure drop" class="w-full text-xs border border-slate-300 rounded-lg p-2.5" required>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Allocate Spare Part (Locks Inventory)</label>
+          <select class="w-full text-xs border border-slate-300 rounded-lg p-2.5 bg-slate-50">
+            <option>PRT-HYD-01: Pump Seal Kit (1 unit locked, 4 available)</option>
+          </select>
+        </div>
+
+        <!-- Live Validation Panel -->
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-700 uppercase">Pre-Flight Validation Engine Report</span>
+            <span class="text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">All Checks Passed</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs pt-1 text-emerald-700">
+            <div>✔ Machine belongs to Site A</div>
+            <div>✔ Maintenance contract warranty ACTIVE</div>
+            <div>✔ No duplicate open tickets</div>
+            <div>✔ Qualified technician available (Hydraulics L3)</div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+          <button type="button" onclick="switchView('dashboard')" class="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-xs font-medium">Cancel</button>
+          <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow">Submit Work Order</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- SCREEN 5: APPROVAL QUEUE -->
+    <section id="view-approvals" class="hidden max-w-4xl mx-auto space-y-4">
+      <div>
+        <h2 class="text-base font-bold text-slate-900">Engineering Approval Queue</h2>
+        <p class="text-xs text-slate-500">Sign-off and authorization gate before technician dispatch</p>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 shadow-xs p-5 space-y-4">
+        <div class="flex items-start justify-between flex-wrap gap-2">
+          <div>
+            <span class="font-mono font-bold text-sm text-slate-900">REQ-2026-0104</span>
+            <span class="badge-p1 text-[10px] font-bold px-2 py-0.5 rounded ml-2">P1 - CRITICAL</span>
+            <h4 class="font-bold text-sm text-slate-800 mt-1">Hydraulic pump failure - catastrophic pressure drop</h4>
+            <p class="text-xs text-slate-500 mt-0.5">Machine M-104 • Site A (Apex Manufacturing)</p>
+          </div>
+          <span class="text-xs font-bold text-rose-600 bg-rose-50 px-2.5 py-1 rounded">3h 50m remaining</span>
+        </div>
+
+        <div class="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs flex justify-between">
+          <span class="text-emerald-800 font-semibold">✔ Automated Validation Passed: Warranty active, 1x PRT-HYD-01 allocated.</span>
+          <span class="font-bold text-emerald-700 uppercase">ELIGIBLE</span>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+          <button onclick="approveRequest('REQ-104')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow">
+            ✔ Approve Work Order & Auto-Assign
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 6: ASSIGNMENT & CANDIDATE MATCHING -->
+    <section id="view-assignments" class="hidden space-y-4">
+      <div>
+        <h2 class="text-base font-bold text-slate-900">Technician Matching & Scheduling (Section 7.2)</h2>
+        <p class="text-xs text-slate-500">Algorithmic scoring: 40% skill + 30% proximity + 20% workload + 10% rating</p>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 shadow-xs p-4 space-y-3">
+        <h4 class="text-xs font-bold uppercase text-slate-600">Scored Candidates for REQ-104 (Site A)</h4>
+        <div class="space-y-2" id="assignmentCandidatesList"></div>
+      </div>
+    </section>
+
+    <!-- SCREEN 7: EXCEPTIONS CENTER -->
+    <section id="view-exceptions" class="hidden space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-base font-bold text-slate-900">Exceptions Center & Auto-Recovery (Section 7.4)</h2>
+          <p class="text-xs text-slate-500">Critical technician dropout flags, stock shortages, and SLA breaches</p>
+        </div>
+        <button onclick="techAction('DROPOUT')" class="px-3 py-1.5 bg-rose-100 text-rose-800 rounded-lg text-xs font-bold hover:bg-rose-200">
+          Simulate Tech Dropout Alert
+        </button>
+      </div>
+
+      <div id="exceptionsListContainer" class="space-y-3">
+        <div class="p-8 bg-white rounded-xl border border-slate-200 text-center text-xs text-slate-400">
+          No unresolved exceptions currently active.
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 8: TECHNICIAN MOBILE PWA VIEW -->
+    <section id="view-myjobs" class="hidden flex justify-center py-4">
+      <div class="w-full max-w-sm bg-slate-900 p-3 rounded-[36px] shadow-2xl border-4 border-slate-800">
+        <div class="bg-slate-50 rounded-[28px] overflow-hidden min-h-[560px] flex flex-col border border-slate-200">
+          <div class="bg-indigo-900 text-white p-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-[10px] text-indigo-300 tracking-wider uppercase font-semibold">Technician Portal</span>
+                <h3 class="font-bold text-sm" id="techPortalName">Ravi Kumar (Hydraulics L3)</h3>
+              </div>
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+            </div>
+          </div>
+
+          <div class="p-4 flex-1 space-y-4 overflow-y-auto">
+            <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3">
+              <div>
+                <span class="badge-p1 text-[10px] font-bold px-2 py-0.5 rounded-full">P1 - CRITICAL</span>
+                <h4 class="font-bold text-slate-900 text-sm mt-1">M-104 Hydraulic Pump</h4>
+                <p class="text-xs text-slate-500">Site A - Apex Mfg (4.2 km)</p>
+              </div>
+
+              <div class="space-y-2 pt-2">
+                <div class="grid grid-cols-2 gap-2">
+                  <button onclick="techAction('START')" class="py-2 px-3 bg-indigo-600 text-white rounded-lg text-xs font-bold shadow-sm">▶ Start Work</button>
+                  <button onclick="techAction('ADD_LOG')" class="py-2 px-3 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold">📝 Add Log</button>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <button onclick="techAction('UPLOAD_PHOTO')" class="py-2 px-3 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold">📷 Photo Proof</button>
+                  <button onclick="techAction('COMPLETE')" class="py-2 px-3 bg-emerald-600 text-white rounded-lg text-xs font-bold shadow-sm">✔ Submit Complete</button>
+                </div>
+                <button onclick="techAction('DROPOUT')" class="w-full mt-2 py-2 px-3 bg-rose-50 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold">
+                  🚨 Can't Make It (Trigger Dropout)
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 9: RESOURCES & PARTS -->
+    <section id="view-resources" class="hidden space-y-4">
+      <div>
+        <h2 class="text-base font-bold text-slate-900">Resources & Spare Parts Inventory</h2>
+        <p class="text-xs text-slate-500">Warehouse stock, low-stock threshold triggers, and active locks</p>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-50 text-slate-500 uppercase font-semibold border-b">
+            <tr>
+              <th class="p-3">SKU / Part Name</th>
+              <th class="p-3">Unit Cost</th>
+              <th class="p-3">On Hand</th>
+              <th class="p-3">Reserved</th>
+              <th class="p-3">Status</th>
+              <th class="p-3 text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100" id="resourcesTableBody">
+            <tr>
+              <td class="p-3 font-bold">PRT-HYD-01 (Hydraulic Seal Kit)</td>
+              <td class="p-3">$145</td>
+              <td class="p-3 font-mono">6</td>
+              <td class="p-3 font-mono text-indigo-600 font-bold">1</td>
+              <td class="p-3"><span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded">OK</span></td>
+              <td class="p-3 text-right"><button onclick="showToast('Restocked', '+5 units added', 'success')" class="px-2 py-1 bg-slate-100 rounded font-semibold text-[11px]">+ Restock</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SCREEN 10: MACHINES & SITES -->
+    <section id="view-machines" class="hidden bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
+      <div class="border-b border-slate-100 pb-4">
+        <h2 class="text-xl font-bold text-slate-900">Machine M-104 &bull; Service Lifecycle Timeline</h2>
+        <p class="text-xs text-slate-500">Equipment service history timeline (Section 5 Blueprint)</p>
+      </div>
+      <div class="relative pl-6 space-y-6 before:content-[''] before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200" id="machineTimelineContainer"></div>
+    </section>
+
+    <!-- SCREEN 11: AUDIT TRAIL -->
+    <section id="view-admin" class="hidden bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
+      <div class="flex items-center justify-between border-b pb-4">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900">Immutable Audit Trail (Section 5 & 8)</h2>
+          <p class="text-xs text-slate-500">Every workflow transition and role authorization recorded</p>
+        </div>
+        <button onclick="exportAuditJSON()" class="px-3 py-1 bg-slate-100 text-slate-700 text-xs font-semibold rounded border">Download JSON</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs font-mono">
+          <thead class="bg-slate-50 text-slate-600 uppercase font-semibold border-b">
+            <tr><th class="p-2">Time</th><th class="p-2">Actor</th><th class="p-2">Entity</th><th class="p-2">Action</th><th class="p-2">Change</th></tr>
+          </thead>
+          <tbody id="auditTableBody" class="divide-y divide-slate-100 text-[11px]"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SCREEN 12: SETTINGS & SLA -->
+    <section id="view-settings" class="hidden max-w-4xl mx-auto bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
+      <h2 class="text-lg font-bold text-slate-900">Settings & SLA Configuration</h2>
+      <div class="space-y-3 text-xs">
+        <div class="p-3 bg-slate-50 rounded-lg border flex justify-between items-center">
+          <div><b>P1 Critical (Line Stopped)</b><span class="block text-slate-400">Respond: 30m • Resolve: 4 hours</span></div>
+          <span class="font-mono font-bold text-rose-600">4 Hours</span>
+        </div>
+        <div class="p-3 bg-slate-50 rounded-lg border flex justify-between items-center">
+          <div><b>P2 High (Degraded)</b><span class="block text-slate-400">Respond: 2h • Resolve: 12 hours</span></div>
+          <span class="font-mono font-bold text-amber-600">12 Hours</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: REQUEST DETAILS -->
+  <div id="requestDetailModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col">
+      <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <div>
+          <h3 class="font-bold text-slate-900 text-base" id="modalTicketTitle">REQ-104</h3>
+          <span id="modalStatusBadge" class="status-PENDING_APPROVAL text-xs font-bold px-2 py-0.5 rounded">PENDING_APPROVAL</span>
+        </div>
+        <button onclick="closeModal('requestDetailModal')" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+      </div>
+      <div class="p-5 space-y-4">
+        <div class="bg-indigo-50/60 border border-indigo-100 rounded-xl p-4">
+          <span class="text-xs font-bold text-indigo-900 uppercase">Technician Auto-Matching Formula</span>
+          <div class="space-y-2 mt-2" id="matchEngineList"></div>
+        </div>
+      </div>
+      <div class="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-2" id="modalActionFooter"></div>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      currentUserRole: 'OPS_MANAGER',
+      currentView: 'dashboard',
+      technicians: [
+        { id: 'TECH-1', name: 'Ravi Kumar', skill: 'Hydraulics', level: 3, km: 4.2, jobs: 0, rating: 4.8 },
+        { id: 'TECH-2', name: 'Priya Sharma', skill: 'Hydraulics', level: 3, km: 11.5, jobs: 1, rating: 4.9 },
+        { id: 'TECH-3', name: 'Vikram Singh', skill: 'Electrical', level: 2, km: 18.0, jobs: 0, rating: 4.5 }
+      ],
+      requests: [
+        {
+          id: 'REQ-104',
+          ticketNo: 'REQ-2026-0104',
+          machineId: 'M-104',
+          machineName: 'Hydraulic Stamping Press 250T',
+          site: 'Site A',
+          priority: 'P1',
+          requiredSkill: 'Hydraulics',
+          title: 'Hydraulic pump failure - low pressure drop',
+          status: 'PENDING_APPROVAL',
+          assignedTech: null,
+          slaMinutesRemaining: 230
+        },
+        {
+          id: 'REQ-102',
+          ticketNo: 'REQ-2026-0102',
+          machineId: 'M-201',
+          machineName: 'CNC Milling 5-Axis',
+          site: 'Site B',
+          priority: 'P2',
+          requiredSkill: 'Electrical',
+          title: 'Axis servo motor thermal warning',
+          status: 'IN_PROGRESS',
+          assignedTech: 'Vikram Singh',
+          slaMinutesRemaining: 45
+        }
+      ],
+      exceptions: [],
+      auditLogs: [
+        { time: '12:30:10', actor: 'Validation Engine', entity: 'Machine: M-104', action: 'VALIDATION_PASS', change: 'Contract verified; parts in stock' },
+        { time: '12:30:00', actor: 'Customer: Site A', entity: 'Ticket: REQ-104', action: 'CREATE', change: 'Status -> SUBMITTED' }
+      ]
+    };
+
+    function calculateScore(tech) {
+      return Math.round((40 * (tech.level / 3)) + (30 * Math.max(0, 1 - (tech.km / 100))) + (20 * Math.max(0, 1 - (tech.jobs / 3))) + (10 * (tech.rating / 5)));
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderRequestTable();
+      renderAuditTable();
+      renderMachineTimeline();
+      renderCandidates();
+    });
+
+    function switchView(viewName) {
+      state.currentView = viewName;
+      ['dashboard', 'requests', 'newrequest', 'approvals', 'assignments', 'exceptions', 'myjobs', 'resources', 'machines', 'admin', 'settings'].forEach(v => {
+        const el = document.getElementById('view-' + v);
+        const tab = document.getElementById('tab-' + v);
+        if (el) el.classList.toggle('hidden', v !== viewName);
+        if (tab) {
+          tab.className = (v === viewName)
+            ? 'px-3 py-1.5 rounded-lg bg-indigo-600 text-white shadow-sm whitespace-nowrap'
+            : 'px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 whitespace-nowrap';
+        }
+      });
+      if (viewName === 'dashboard') renderRequestTable();
+    }
+
+    function switchRole(role) {
+      state.currentUserRole = role;
+      if (role.startsWith('TECHNICIAN')) {
+        switchView('myjobs');
+        document.getElementById('techPortalName').innerText = role === 'TECHNICIAN_RAVI' ? 'Ravi Kumar (Hydraulics L3)' : 'Priya Sharma (Hydraulics L3)';
+      } else if (role === 'CUSTOMER') {
+        switchView('newrequest');
+      } else if (role === 'APPROVER') {
+        switchView('approvals');
+      } else if (role === 'ADMIN') {
+        switchView('admin');
+      } else {
+        switchView('dashboard');
+      }
+      showToast('Role Switched', `Logged in as: ${role}`, 'info');
+    }
+
+    function renderRequestTable() {
+      const tbody = document.getElementById('requestTableBody');
+      tbody.innerHTML = '';
+      state.requests.forEach(req => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 transition border-b border-slate-100 cursor-pointer';
+        tr.innerHTML = `
+          <td class="py-2.5 px-4"><div class="font-bold text-slate-900">${req.id}</div><div class="text-slate-500 text-[11px]">${req.machineName}</div></td>
+          <td class="py-2.5 px-3">${req.site}</td>
+          <td class="py-2.5 px-3"><span class="badge-${req.priority.toLowerCase()} font-bold px-2 py-0.5 rounded text-[10px]">${req.priority}</span></td>
+          <td class="py-2.5 px-3"><span class="status-${req.status} font-semibold px-2 py-0.5 rounded text-[10px]">${req.status}</span></td>
+          <td class="py-2.5 px-3 text-indigo-700 font-medium">${req.assignedTech || 'Unassigned'}</td>
+          <td class="py-2.5 px-3 text-slate-600 font-medium">${Math.floor(req.slaMinutesRemaining/60)}h ${req.slaMinutesRemaining%60}m</td>
+          <td class="py-2.5 px-4 text-right"><button onclick="openRequestModal('${req.id}')" class="text-xs text-indigo-600 font-bold hover:underline">Details &rarr;</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderCandidates() {
+      const c = document.getElementById('assignmentCandidatesList');
+      if (!c) return;
+      c.innerHTML = '';
+      state.technicians.forEach((tech, idx) => {
+        const score = calculateScore(tech);
+        c.innerHTML += `
+          <div class="p-3 bg-slate-50 border rounded-lg flex items-center justify-between text-xs">
+            <div>
+              <span class="font-bold">#${idx+1} ${tech.name}</span>
+              <span class="text-slate-500 block text-[11px]">${tech.skill} L${tech.level} • ${tech.km}km away • Score: ${score}/100</span>
+            </div>
+            <button onclick="assignTech('REQ-104', '${tech.name}')" class="px-3 py-1 bg-indigo-600 text-white rounded font-bold text-xs">Assign</button>
+          </div>
+        `;
+      });
+    }
+
+    function openRequestModal(reqId) {
+      const req = state.requests.find(r => r.id === reqId);
+      document.getElementById('modalTicketTitle').innerText = `${req.id}: ${req.title}`;
+      const candidatesList = document.getElementById('matchEngineList');
+      candidatesList.innerHTML = '';
+      state.technicians.forEach((tech, idx) => {
+        const score = calculateScore(tech);
+        candidatesList.innerHTML += `
+          <div class="p-2.5 rounded-lg border bg-white flex items-center justify-between text-xs">
+            <div><b>#${idx+1} ${tech.name}</b> (${tech.km}km, score: ${score})</div>
+            <button onclick="assignTech('${req.id}', '${tech.name}')" class="px-2 py-1 bg-indigo-600 text-white rounded text-[11px]">Assign</button>
+          </div>
+        `;
+      });
+      document.getElementById('requestDetailModal').classList.remove('hidden');
+    }
+
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+    function demoStep(n) {
+      if (n === 1) switchView('newrequest');
+      if (n === 2) { const r = state.requests.find(x => x.id === 'REQ-104'); r.status = 'PENDING_APPROVAL'; switchView('dashboard'); }
+      if (n === 3) assignTech('REQ-104', 'Ravi Kumar');
+      if (n === 4) techAction('DROPOUT');
+      if (n === 5) reassignTech('REQ-104', 'Priya Sharma');
+      if (n === 6) { switchRole('TECHNICIAN_PRIYA'); techAction('START'); techAction('COMPLETE'); }
+      if (n === 7) { switchRole('OPS_MANAGER'); verifyAndClose('REQ-104'); switchView('machines'); }
+    }
+
+    function approveRequest(reqId) {
+      const r = state.requests.find(x => x.id === reqId);
+      r.status = 'APPROVED';
+      assignTech(reqId, 'Ravi Kumar');
+      switchView('dashboard');
+    }
+
+    function assignTech(reqId, tech) {
+      const r = state.requests.find(x => x.id === reqId);
+      r.assignedTech = tech;
+      r.status = 'ASSIGNED';
+      addAudit('System', reqId, 'ASSIGN', `Assigned ${tech}`);
+      closeModal('requestDetailModal');
+      renderRequestTable();
+      showToast('Assigned', `${tech} assigned to ticket`, 'success');
+    }
+
+    function techAction(action) {
+      const r = state.requests.find(x => x.id === 'REQ-104');
+      if (action === 'DROPOUT') {
+        r.status = 'EXCEPTION';
+        r.assignedTech = null;
+        document.getElementById('exceptionBanner').classList.remove('hidden');
+        document.getElementById('exceptionsListContainer').innerHTML = `
+          <div class="p-4 bg-rose-50 border border-rose-300 rounded-xl flex items-center justify-between text-xs">
+            <div><b class="text-rose-800">CRITICAL: Ravi Kumar Dropped Out on REQ-104</b><p class="text-rose-600">Reassignment required.</p></div>
+            <button onclick="reassignTech('REQ-104', 'Priya Sharma')" class="px-3 py-1 bg-rose-600 text-white font-bold rounded">Reassign Priya Now</button>
+          </div>
+        `;
+        addAudit('Ravi Kumar', 'REQ-104', 'DROPOUT', 'Ravi unavailable -> Exception raised');
+        switchView('exceptions');
+      } else if (action === 'START') {
+        r.status = 'IN_PROGRESS';
+        addAudit('Tech', 'REQ-104', 'START', 'Work started');
+        showToast('Started', 'Work started on-site', 'info');
+      } else if (action === 'COMPLETE') {
+        r.status = 'PENDING_VERIFICATION';
+        addAudit('Tech', 'REQ-104', 'COMPLETE', 'Submitted for verification');
+        showToast('Complete', 'Submitted for manager sign-off', 'success');
+      }
+      renderRequestTable();
+    }
+
+    function reassignTech(reqId, tech) {
+      const r = state.requests.find(x => x.id === reqId);
+      r.status = 'ASSIGNED';
+      r.assignedTech = tech;
+      document.getElementById('exceptionBanner').classList.add('hidden');
+      document.getElementById('exceptionsListContainer').innerHTML = `<div class="p-4 bg-emerald-50 border border-emerald-300 rounded-xl text-xs text-emerald-800 font-bold">✔ Resolved: Reassigned to ${tech}</div>`;
+      addAudit('Manager', reqId, 'REASSIGN', `One-click reassigned to ${tech}`);
+      renderRequestTable();
+      showToast('Reassigned', `Reassigned to ${tech}`, 'success');
+    }
+
+    function verifyAndClose(reqId) {
+      const r = state.requests.find(x => x.id === reqId);
+      r.status = 'CLOSED';
+      addAudit('Manager', reqId, 'VERIFY_CLOSE', 'Closed and verified');
+      renderRequestTable();
+      showToast('Closed', 'Work order verified and closed.', 'success');
+    }
+
+    function handleCreateRequest(e) {
+      e.preventDefault();
+      const title = document.getElementById('reqTitle').value;
+      const newReq = {
+        id: 'REQ-201',
+        ticketNo: 'REQ-2026-0201',
+        machineId: 'M-104',
+        machineName: 'Hydraulic Stamping Press 250T',
+        site: 'Site A',
+        priority: 'P1',
+        requiredSkill: 'Hydraulics',
+        title: title,
+        status: 'PENDING_APPROVAL',
+        assignedTech: null,
+        slaMinutesRemaining: 240
+      };
+      state.requests.unshift(newReq);
+      addAudit('Customer', newReq.id, 'CREATE', 'Created P1 request');
+      showToast('Submitted', 'Ticket created and pre-validated.', 'success');
+      switchView('dashboard');
+    }
+
+    function renderMachineTimeline() {
+      const c = document.getElementById('machineTimelineContainer');
+      c.innerHTML = `
+        <div class="relative pl-6"><div class="font-bold text-xs">12:35 PM &bull; Closed & Verified</div><p class="text-xs text-slate-500">Service confirmed.</p></div>
+        <div class="relative pl-6"><div class="font-bold text-xs text-rose-700">12:28 PM &bull; Tech Dropout Exception</div><p class="text-xs text-slate-500">Ravi dropped out &rarr; Reassigned to Priya Sharma</p></div>
+        <div class="relative pl-6"><div class="font-bold text-xs">12:20 PM &bull; Ticket Raised</div><p class="text-xs text-slate-500">Hydraulic pump low pressure.</p></div>
+      `;
+    }
+
+    function renderAuditTable() {
+      const tbody = document.getElementById('auditTableBody');
+      tbody.innerHTML = '';
+      state.auditLogs.forEach(l => {
+        tbody.innerHTML += `<tr><td class="p-2">${l.time}</td><td class="p-2 font-bold">${l.actor}</td><td class="p-2 text-indigo-700">${l.entity}</td><td class="p-2">${l.action}</td><td class="p-2">${l.change}</td></tr>`;
+      });
+    }
+
+    function addAudit(actor, entity, action, change) {
+      state.auditLogs.unshift({ time: new Date().toLocaleTimeString(), actor, entity, action, change });
+      renderAuditTable();
+    }
+
+    function showToast(title, msg, type) {
+      const t = document.getElementById('toastNotification');
+      document.getElementById('toastTitle').innerText = title;
+      document.getElementById('toastMessage').innerText = msg;
+      t.classList.remove('hidden');
+      setTimeout(() => t.classList.add('hidden'), 4000);
+    }
+
+    function hideToast() { document.getElementById('toastNotification').classList.add('hidden'); }
+    function resetDemoData() { location.reload(); }
+    function exportAuditJSON() {
+      const blob = new Blob([JSON.stringify(state.auditLogs, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'audit.json'; a.click();
+    }
+  </script>
+</body>
+</html>
